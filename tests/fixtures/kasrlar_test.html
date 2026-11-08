@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kasrlar ustida amallar — Test-viktorina</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#0f2e2b;
+    --bg2:#123d38;
+    --paper:#fbf7ee;
+    --ink:#0f2e2b;
+    --gold:#e7a93c;
+    --gold-dark:#c98a22;
+    --coral:#e2694a;
+    --teal:#2e8b7f;
+    --muted:#6b7a76;
+    --line:#d8cfbb;
+    --good:#2f8f5b;
+    --bad:#c0473a;
+    --r:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',Tahoma,Verdana,sans-serif;
+    background:radial-gradient(circle at 20% 10%,var(--bg2),var(--bg) 70%);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:24px 14px 60px;
+  }
+  .wrap{width:100%;max-width:760px;}
+  .card{
+    background:var(--paper);
+    border-radius:var(--r);
+    box-shadow:0 18px 40px rgba(0,0,0,.35);
+    padding:32px 28px;
+    position:relative;
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute; top:-40px; right:-40px;
+    width:150px;height:150px;border-radius:50%;
+    background:conic-gradient(var(--gold) 0 40%, transparent 40% 100%);
+    opacity:.18;
+  }
+  h1{
+    font-size:1.5rem; margin:0 0 4px; color:var(--bg);
+    letter-spacing:.2px;
+  }
+  .subtitle{color:var(--muted); font-size:.92rem; margin:0 0 22px;}
+  .brand{
+    display:flex; align-items:center; gap:10px; margin-bottom:18px;
+  }
+  .frac{
+    display:inline-flex; flex-direction:column; align-items:center;
+    font-weight:700; font-size:.95rem; line-height:1; color:var(--paper);
+    background:var(--coral); border-radius:10px; padding:8px 10px;
+  }
+  .frac span{display:block;}
+  .frac .bar{width:22px;height:2px;background:var(--paper);margin:3px 0;}
+
+  label{display:block; font-size:.85rem; color:var(--bg); font-weight:600; margin:14px 0 6px;}
+  input[type=text]{
+    width:100%; padding:12px 14px; border-radius:10px;
+    border:1.5px solid var(--line); font-size:1rem; background:#fff;
+    outline:none;
+  }
+  input[type=text]:focus{border-color:var(--teal);}
+  .btn{
+    display:inline-block; border:none; cursor:pointer;
+    background:var(--coral); color:#fff; font-weight:700;
+    padding:13px 26px; border-radius:12px; font-size:1rem;
+    margin-top:22px; transition:transform .12s, box-shadow .12s;
+    box-shadow:0 8px 18px rgba(226,105,74,.35);
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn:disabled{background:#c8c0ad; box-shadow:none; cursor:not-allowed;}
+  .btn.secondary{background:var(--teal); box-shadow:0 8px 18px rgba(46,139,127,.3);}
+  .btn.ghost{background:transparent; color:var(--bg); border:1.5px solid var(--line); box-shadow:none;}
+
+  .hidden{display:none !important;}
+
+  /* Quiz header */
+  .quiz-top{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:14px; gap:10px; flex-wrap:wrap;
+  }
+  .pill{
+    background:var(--bg); color:var(--paper); font-size:.8rem; font-weight:700;
+    padding:6px 12px; border-radius:999px;
+  }
+  .timer-row{display:flex; gap:8px; align-items:center;}
+  .timebox{
+    text-align:center; min-width:56px;
+  }
+  .timebox .num{font-weight:800; font-size:1.05rem; color:var(--coral);}
+  .timebox .lab{font-size:.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:.5px;}
+
+  .progress-outer{height:8px; background:#eae3d1; border-radius:6px; overflow:hidden; margin-bottom:20px;}
+  .progress-inner{height:100%; background:linear-gradient(90deg,var(--teal),var(--gold)); width:0%; transition:width .3s;}
+
+  .qbar-outer{height:5px; background:#eae3d1; border-radius:6px; overflow:hidden; margin-bottom:18px;}
+  .qbar-inner{height:100%; background:var(--coral); width:100%; transition:width 1s linear;}
+
+  .question{font-size:1.15rem; font-weight:700; color:var(--bg); margin-bottom:18px; line-height:1.45;}
+
+  .options{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media(max-width:520px){.options{grid-template-columns:1fr;}}
+  .opt{
+    text-align:left; background:#fff; border:2px solid var(--line);
+    border-radius:12px; padding:14px 16px; font-size:1rem; cursor:pointer;
+    display:flex; gap:10px; align-items:center; transition:.15s;
+  }
+  .opt:hover{border-color:var(--teal);}
+  .opt .letter{
+    width:26px;height:26px;border-radius:50%;background:var(--bg); color:var(--paper);
+    display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0;
+  }
+  .opt.selected{border-color:var(--coral); background:#fff3ee;}
+  .opt.correct{border-color:var(--good); background:#eaf7ee;}
+  .opt.wrong{border-color:var(--bad); background:#fbebe9;}
+  .opt.disabled{pointer-events:none;}
+
+  /* Results */
+  .score-hero{
+    text-align:center; padding:20px 0 6px;
+  }
+  .score-num{font-size:3rem; font-weight:800; color:var(--coral);}
+  .score-sub{color:var(--muted); font-size:.95rem;}
+  .stat-row{display:flex; justify-content:center; gap:22px; margin:18px 0 6px; flex-wrap:wrap;}
+  .stat{text-align:center;}
+  .stat .v{font-weight:800; font-size:1.3rem; color:var(--bg);}
+  .stat .l{font-size:.72rem; color:var(--muted); text-transform:uppercase;}
+
+  table{width:100%; border-collapse:collapse; margin-top:18px; font-size:.85rem;}
+  th,td{text-align:left; padding:8px 6px; border-bottom:1px solid var(--line);}
+  th{color:var(--muted); font-size:.72rem; text-transform:uppercase;}
+  .tag{font-weight:700; font-size:.78rem;}
+  .tag.ok{color:var(--good);}
+  .tag.no{color:var(--bad);}
+  .review-q{font-size:.85rem; margin-bottom:2px;}
+  .review-a{font-size:.78rem; color:var(--muted);}
+
+  .foot-link{
+    text-align:center; margin-top:26px; font-size:.78rem; color:#c9c0ab;
+  }
+  .foot-link a{color:var(--gold); cursor:pointer; text-decoration:underline;}
+
+  .teacher-table-wrap{max-height:340px; overflow:auto; border:1px solid var(--line); border-radius:10px; margin-top:10px;}
+  .badge-count{background:var(--gold); color:var(--bg); font-weight:800; border-radius:999px; padding:2px 10px; font-size:.78rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- LOGIN SCREEN -->
+  <div class="card" id="screen-login">
+    <div class="brand">
+      <div class="frac"><span>1</span><span class="bar"></span><span>2</span></div>
+      <div>
+        <h1 style="margin-bottom:2px;">Kasrlar ustida amallar</h1>
+        <div class="subtitle">Test-viktorina · 20 ta savol · har biriga 60 soniya</div>
+      </div>
+    </div>
+
+    <label for="fam">Familiyangiz</label>
+    <input type="text" id="fam" placeholder="Masalan: Karimova">
+
+    <label for="ism">Ismingiz</label>
+    <input type="text" id="ism" placeholder="Masalan: Dilnoza">
+
+    <label for="guruh">Guruhingiz / sinfingiz</label>
+    <input type="text" id="guruh" placeholder="Masalan: 6-A">
+
+    <div style="font-size:.8rem; color:var(--muted); margin-top:16px; line-height:1.5;">
+      ⏱ Har bir savolga <b>60 soniya</b> beriladi. Butun test <b>25 daqiqa</b>da yakunlanadi.<br>
+      🔀 Javob variantlari har bir talaba uchun boshqacha tartibda beriladi.
+    </div>
+
+    <button class="btn" id="startBtn" disabled>Testni boshlash</button>
+    <div class="foot-link"><a id="openTeacher1">O'qituvchi uchun natijalar paneli</a></div>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div class="card hidden" id="screen-quiz">
+    <div class="quiz-top">
+      <span class="pill" id="qcounter">Savol 1 / 20</span>
+      <div class="timer-row">
+        <div class="timebox"><div class="num" id="totalTime">25:00</div><div class="lab">umumiy</div></div>
+        <div class="timebox"><div class="num" id="qTime">60</div><div class="lab">savol, sek</div></div>
+      </div>
+    </div>
+    <div class="progress-outer"><div class="progress-inner" id="progBar"></div></div>
+    <div class="qbar-outer"><div class="qbar-inner" id="qBar"></div></div>
+
+    <div class="question" id="qText"></div>
+    <div class="options" id="optsWrap"></div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="card hidden" id="screen-result">
+    <h1 style="text-align:center;">Test yakunlandi!</h1>
+    <div class="score-hero">
+      <div class="score-num" id="scoreNum">0/20</div>
+      <div class="score-sub" id="scoreName"></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="v" id="statPercent">0%</div><div class="l">Natija</div></div>
+      <div class="stat"><div class="v" id="statCorrect">0</div><div class="l">To'g'ri</div></div>
+      <div class="stat"><div class="v" id="statWrong">0</div><div class="l">Xato</div></div>
+      <div class="stat"><div class="v" id="statTime">0:00</div><div class="l">Sarflangan vaqt</div></div>
+    </div>
+
+    <div style="text-align:center;">
+      <button class="btn" id="downloadOwnBtn">📥 Natijamni Excelda yuklab olish</button>
+    </div>
+
+    <table>
+      <thead><tr><th>#</th><th>Savol</th><th>Sizning javobingiz</th><th>To'g'ri javob</th><th></th></tr></thead>
+      <tbody id="reviewBody"></tbody>
+    </table>
+
+    <div class="foot-link"><a id="openTeacher2">O'qituvchi uchun natijalar paneli</a></div>
+  </div>
+
+  <!-- TEACHER SCREEN -->
+  <div class="card hidden" id="screen-teacher">
+    <h1>O'qituvchi paneli</h1>
+    <div class="subtitle">Ushbu brauzer (qurilma)da yakunlangan barcha talabalar natijalari — <span class="badge-count" id="teacherCount">0</span></div>
+
+    <div class="teacher-table-wrap">
+      <table id="teacherTable">
+        <thead><tr><th>№</th><th>F.I.SH</th><th>Guruh</th><th>To'g'ri</th><th>Foiz</th><th>Vaqt</th><th>Sana</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <button class="btn secondary" id="exportAllBtn">📊 Barcha natijalarni Excel (.xlsx) formatda yuklab olish</button>
+    <button class="btn ghost" id="clearAllBtn">Natijalarni tozalash</button>
+    <div class="foot-link"><a id="backToLogin">← Bosh sahifaga qaytish</a></div>
+  </div>
+
+</div>
+
+<script>
+/* ================= DATA: 20 savol (osondan murakkabga) ================= */
+const RAW_QUESTIONS = [
+  {q:"1/5 + 2/5 = ?", opts:["3/5","3/10","2/5","1/5"], correct:0},
+  {q:"3/7 − 1/7 = ?", opts:["2/7","4/7","3/14","1/7"], correct:0},
+  {q:"1/2 + 1/3 = ?", opts:["5/6","2/5","1/6","2/6"], correct:0},
+  {q:"3/4 − 1/6 = ?", opts:["7/12","2/12","1/2","5/12"], correct:0},
+  {q:"2/3 · 3/4 = ?", opts:["1/2","6/7","5/12","3/4"], correct:0},
+  {q:"5/6 ∶ 1/3 = ?", opts:["2 1/2","5/18","1 2/3","5/6"], correct:0},
+  {q:"2/5 · 5/8 = ?", opts:["1/4","2/13","10/40","7/13"], correct:0},
+  {q:"7/9 − 2/9 + 1/9 = ?", opts:["2/3","4/9","5/9","1"], correct:0},
+  {q:"1 1/2 + 2 1/3 = ?", opts:["3 5/6","3 1/6","4 1/6","3 2/3"], correct:0},
+  {q:"2 1/4 − 1 1/2 = ?", opts:["3/4","1 1/4","1/4","1 3/4"], correct:0},
+  {q:"3 1/3 · 2 = ?", opts:["6 2/3","6 1/3","5 2/3","7"], correct:0},
+  {q:"4 1/2 ∶ 1 1/2 = ?", opts:["3","2","1 1/2","4"], correct:0},
+  {q:"(1/2 + 1/3) ∶ 5/6 = ?", opts:["1","5/6","2","1/2"], correct:0},
+  {q:"2/3 ning 1/4 qismi + 1/6 = ?", opts:["1/3","1/2","2/3","1/6"], correct:0},
+  {q:"(3/4 − 1/2) · 4/5 = ?", opts:["1/5","1/4","4/5","2/5"], correct:0},
+  {q:"5/8 ∶ (1/4 + 1/8) = ?", opts:["1 2/3","1 1/3","5/24","2"], correct:0},
+  {q:"2 1/5 · 1 2/3 = ?", opts:["3 2/3","3 1/3","11/15","4"], correct:0},
+  {q:"(1/2 + 1/4) ∶ (3/4 − 1/8) = ?", opts:["1 1/5","4/5","1 3/5","5/6"], correct:0},
+  {q:"Omborda g'allaning 3/5 qismi bug'doy. Agar bug'doy 240 tonna bo'lsa, jami g'alladan qolgan (arpa) qismi necha tonna?", opts:["160 tonna","240 tonna","400 tonna","100 tonna"], correct:0},
+  {q:"Ishning 1/3 qismini birinchi, qolgan qismining yarmini ikkinchi ishchi bajardi. Ishning qanday qismi hali bajarilmagan?", opts:["1/3","1/2","2/3","1/6"], correct:0},
+];
+
+const QUESTION_TIME = 60;      // har bir savolga sekund
+const TOTAL_TIME = 25 * 60;    // umumiy test vaqti (sekund)
+
+/* ================= STATE ================= */
+let student = {fam:"", ism:"", guruh:""};
+let quiz = [];          // shuffled per-student question set (options shuffled)
+let current = 0;
+let answers = [];       // {selectedIndex, correct, timeUsed}
+let qTimeLeft = QUESTION_TIME;
+let totalTimeLeft = TOTAL_TIME;
+let qInterval = null, totalInterval = null;
+let startedAt = null;
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function buildQuizForStudent(){
+  // Savollar tartibi osondan murakkabga saqlanadi, faqat javob variantlari
+  // har bir talaba uchun boshqacha aralashtiriladi (nusxa ko'chirishning oldini olish uchun).
+  return RAW_QUESTIONS.map(item=>{
+    const optionObjs = item.opts.map((text,i)=>({text, isCorrect:i===item.correct}));
+    const shuffled = shuffle(optionObjs);
+    return {
+      q:item.q,
+      options: shuffled.map(o=>o.text),
+      correctIndex: shuffled.findIndex(o=>o.isCorrect)
+    };
+  });
+}
+
+/* ================= NAV ================= */
+const screens = {
+  login: document.getElementById('screen-login'),
+  quiz: document.getElementById('screen-quiz'),
+  result: document.getElementById('screen-result'),
+  teacher: document.getElementById('screen-teacher'),
+};
+function show(name){
+  Object.values(screens).forEach(s=>s.classList.add('hidden'));
+  screens[name].classList.remove('hidden');
+}
+
+/* ================= LOGIN ================= */
+const famEl = document.getElementById('fam');
+const ismEl = document.getElementById('ism');
+const guruhEl = document.getElementById('guruh');
+const startBtn = document.getElementById('startBtn');
+
+function checkLoginReady(){
+  startBtn.disabled = !(famEl.value.trim() && ismEl.value.trim() && guruhEl.value.trim());
+}
+[famEl,ismEl,guruhEl].forEach(el=>el.addEventListener('input', checkLoginReady));
+
+startBtn.addEventListener('click', ()=>{
+  student = {fam:famEl.value.trim(), ism:ismEl.value.trim(), guruh:guruhEl.value.trim()};
+  quiz = buildQuizForStudent();
+  current = 0;
+  answers = new Array(quiz.length).fill(null);
+  totalTimeLeft = TOTAL_TIME;
+  startedAt = Date.now();
+  show('quiz');
+  startTotalTimer();
+  renderQuestion();
+});
+
+document.getElementById('openTeacher1').addEventListener('click', openTeacher);
+document.getElementById('openTeacher2').addEventListener('click', openTeacher);
+document.getElementById('backToLogin').addEventListener('click', ()=>{
+  famEl.value=""; ismEl.value=""; guruhEl.value="";
+  checkLoginReady();
+  show('login');
+});
+
+/* ================= QUIZ RENDER ================= */
+const qText = document.getElementById('qText');
+const optsWrap = document.getElementById('optsWrap');
+const qcounter = document.getElementById('qcounter');
+const progBar = document.getElementById('progBar');
+const qBar = document.getElementById('qBar');
+const qTimeEl = document.getElementById('qTime');
+const totalTimeEl = document.getElementById('totalTime');
+
+function fmtTime(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return m + ":" + String(s).padStart(2,'0');
+}
+
+function renderQuestion(){
+  const item = quiz[current];
+  qcounter.textContent = `Savol ${current+1} / ${quiz.length}`;
+  progBar.style.width = (current/quiz.length*100)+"%";
+  qText.textContent = item.q;
+  optsWrap.innerHTML = "";
+  const letters = ['A','B','C','D'];
+  item.options.forEach((opt,i)=>{
+    const div = document.createElement('div');
+    div.className = 'opt';
+    div.innerHTML = `<span class="letter">${letters[i]}</span><span>${opt}</span>`;
+    div.addEventListener('click', ()=>selectAnswer(i));
+    optsWrap.appendChild(div);
+  });
+  startQuestionTimer();
+}
+
+function startQuestionTimer(){
+  clearInterval(qInterval);
+  qTimeLeft = QUESTION_TIME;
+  qTimeEl.textContent = qTimeLeft;
+  qBar.style.width = "100%";
+  qInterval = setInterval(()=>{
+    qTimeLeft--;
+    qTimeEl.textContent = qTimeLeft;
+    qBar.style.width = (qTimeLeft/QUESTION_TIME*100)+"%";
+    if(qTimeLeft<=0){
+      clearInterval(qInterval);
+      selectAnswer(-1); // vaqt tugadi, javobsiz
+    }
+  },1000);
+}
+
+function startTotalTimer(){
+  clearInterval(totalInterval);
+  totalTimeEl.textContent = fmtTime(totalTimeLeft);
+  totalInterval = setInterval(()=>{
+    totalTimeLeft--;
+    totalTimeEl.textContent = fmtTime(Math.max(totalTimeLeft,0));
+    if(totalTimeLeft<=0){
+      clearInterval(totalInterval);
+      clearInterval(qInterval);
+      finishTest(true);
+    }
+  },1000);
+}
+
+function selectAnswer(idx){
+  clearInterval(qInterval);
+  const item = quiz[current];
+  const isCorrect = idx === item.correctIndex;
+  answers[current] = {selected: idx, correct: isCorrect};
+
+  // vizual feedback
+  const optDivs = optsWrap.querySelectorAll('.opt');
+  optDivs.forEach((d,i)=>{
+    d.classList.add('disabled');
+    if(i===item.correctIndex) d.classList.add('correct');
+    if(i===idx && idx!==item.correctIndex) d.classList.add('wrong');
+    if(i===idx) d.classList.add('selected');
+  });
+
+  setTimeout(()=>{
+    if(current < quiz.length-1){
+      current++;
+      renderQuestion();
+    } else {
+      clearInterval(totalInterval);
+      finishTest(false);
+    }
+  }, 650);
+}
+
+/* ================= RESULT ================= */
+function finishTest(timedOut){
+  // agar vaqt tugab qolgan bo'lsa, joriy savolga javob berilmagan deb belgilanadi
+  if(timedOut && answers[current]===null){
+    answers[current] = {selected:-1, correct:false};
+  }
+  for(let i=0;i<answers.length;i++){
+    if(answers[i]===null) answers[i] = {selected:-1, correct:false};
+  }
+
+  const correctCount = answers.filter(a=>a.correct).length;
+  const total = quiz.length;
+  const percent = Math.round(correctCount/total*100);
+  const usedSec = Math.min(TOTAL_TIME, Math.round((Date.now()-startedAt)/1000));
+
+  document.getElementById('scoreNum').textContent = `${correctCount}/${total}`;
+  document.getElementById('scoreName').textContent = `${student.fam} ${student.ism} — ${student.guruh}`;
+  document.getElementById('statPercent').textContent = percent+"%";
+  document.getElementById('statCorrect').textContent = correctCount;
+  document.getElementById('statWrong').textContent = total-correctCount;
+  document.getElementById('statTime').textContent = fmtTime(usedSec);
+
+  const body = document.getElementById('reviewBody');
+  body.innerHTML = "";
+  quiz.forEach((item,i)=>{
+    const a = answers[i];
+    const yourAnswer = a.selected>=0 ? item.options[a.selected] : "—";
+    const correctAnswer = item.options[item.correctIndex];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td class="review-q">${item.q}</td>
+      <td class="review-a">${yourAnswer}</td>
+      <td class="review-a">${correctAnswer}</td>
+      <td><span class="tag ${a.correct?'ok':'no'}">${a.correct?'✔':'✘'}</span></td>`;
+    body.appendChild(tr);
+  });
+
+  const record = {
+    fam: student.fam, ism: student.ism, guruh: student.guruh,
+    correct: correctCount, total: total, percent: percent,
+    timeUsed: usedSec, date: new Date().toLocaleString('uz-UZ'),
+    detail: quiz.map((item,i)=>({
+      q:item.q,
+      your: answers[i].selected>=0 ? item.options[answers[i].selected] : "javobsiz",
+      correctAns: item.options[item.correctIndex],
+      isCorrect: answers[i].correct
+    }))
+  };
+  saveResult(record);
+  window.__lastRecord = record;
+
+  show('result');
+}
+
+/* ================= STORAGE (shu brauzer uchun umumiy natijalar) ================= */
+const STORAGE_KEY = 'kasrlar_test_natijalar_v1';
+function loadResults(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveResult(record){
+  try{
+    const all = loadResults();
+    all.push(record);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  }catch(e){ console.warn('Saqlashda xatolik', e); }
+}
+
+/* ================= EXCEL EXPORT ================= */
+function downloadWorkbook(wb, filename){
+  XLSX.writeFile(wb, filename);
+}
+
+document.getElementById('downloadOwnBtn').addEventListener('click', ()=>{
+  const r = window.__lastRecord;
+  if(!r) return;
+  const summary = [{
+    "Familiya": r.fam, "Ism": r.ism, "Guruh": r.guruh,
+    "To'g'ri javoblar": r.correct, "Jami savollar": r.total,
+    "Natija (%)": r.percent, "Sarflangan vaqt": fmtTime(r.timeUsed), "Sana": r.date
+  }];
+  const detail = r.detail.map((d,i)=>({
+    "№": i+1, "Savol": d.q, "Sizning javobingiz": d.your,
+    "To'g'ri javob": d.correctAns, "Natija": d.isCorrect ? "To'g'ri" : "Xato"
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Natija");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detail), "Javoblar");
+  downloadWorkbook(wb, `${r.fam}_${r.ism}_natija.xlsx`);
+});
+
+/* ================= TEACHER PANEL ================= */
+function openTeacher(){
+  renderTeacherTable();
+  show('teacher');
+}
+function renderTeacherTable(){
+  const all = loadResults();
+  document.getElementById('teacherCount').textContent = all.length;
+  const tbody = document.querySelector('#teacherTable tbody');
+  tbody.innerHTML = "";
+  all.forEach((r,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${r.fam} ${r.ism}</td><td>${r.guruh}</td>
+      <td>${r.correct}/${r.total}</td><td>${r.percent}%</td><td>${fmtTime(r.timeUsed)}</td><td>${r.date}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('exportAllBtn').addEventListener('click', ()=>{
+  const all = loadResults();
+  if(all.length===0){ alert("Hali hech qanday natija yo'q."); return; }
+  const summary = all.map((r,i)=>({
+    "№": i+1, "Familiya": r.fam, "Ism": r.ism, "Guruh": r.guruh,
+    "To'g'ri javoblar": r.correct, "Jami savollar": r.total,
+    "Natija (%)": r.percent, "Sarflangan vaqt": fmtTime(r.timeUsed), "Sana": r.date
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Umumiy natijalar");
+
+  // Har bir talaba uchun batafsil javoblar bitta jadvalda
+  const detailRows = [];
+  all.forEach(r=>{
+    r.detail.forEach((d,i)=>{
+      detailRows.push({
+        "Familiya": r.fam, "Ism": r.ism, "Guruh": r.guruh,
+        "№": i+1, "Savol": d.q, "Talaba javobi": d.your,
+        "To'g'ri javob": d.correctAns, "Natija": d.isCorrect ? "To'g'ri" : "Xato"
+      });
+    });
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailRows), "Batafsil javoblar");
+  downloadWorkbook(wb, `sinf_natijalari_${new Date().toISOString().slice(0,10)}.xlsx`);
+});
+
+document.getElementById('clearAllBtn').addEventListener('click', ()=>{
+  if(confirm("Barcha saqlangan natijalarni o'chirishni tasdiqlaysizmi? Bu amalni bekor qilib bo'lmaydi.")){
+    localStorage.removeItem(STORAGE_KEY);
+    renderTeacherTable();
+  }
+});
+</script>
+</body>
+</html>
